@@ -14,29 +14,18 @@ FROM eclipse-temurin:21-jdk
 ENV OLLAMA_HOST=0.0.0.0:11434
 ENV OLLAMA_ORIGINS=*
 
-# --- Install Ollama ---
-# We only need 'curl' now. We are removing 'procps'.
+# --- Install Ollama & Dependencies ---
+# We just need curl.
 RUN apt-get update && apt-get install -y curl
 # Download and install Ollama
 RUN curl -L https://ollama.com/download/ollama-linux-amd64 -o /usr/bin/ollama
 RUN chmod +x /usr/bin/ollama
 
-# --- THIS IS THE FIX ---
-# We start 'ollama serve', get its PID, pull the model, and then 'kill' the PID.
-# This avoids 'pkill' and its dependencies.
-RUN ollama serve & \
-    OLLAMA_PID=$! && \
-    sleep 5 && \
-    echo "Pulling tinyllama model..." && \
-    ollama pull tinyllama && \
-    echo "Model pull complete." && \
-    kill $OLLAMA_PID
-# --- END OF FIX ---
-
 # Set up the application directory
 WORKDIR /app
 
 # --- Copy Artifacts ---
+# We are NOT pulling the model here.
 COPY --from=build /app/target/gift-recommender-0.0.1-SNAPSHOT.jar app.jar
 COPY start.sh .
 RUN chmod +x start.sh
