@@ -1,6 +1,10 @@
 # --- Stage 1: Build the Spring Boot App ---
 # We name this stage 'build'. It will be discarded later.
-FROM maven:3.8.5-openjdk-21 AS build
+#
+# --- THIS IS THE FIX ---
+# Replaced the non-existent tag with a valid one
+FROM maven:3.9.8-eclipse-temurin-21 AS build
+# --- END OF FIX ---
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
