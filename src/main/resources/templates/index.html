@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎁 Gift Finder Bot</title>
+    <style>
+        /* --- Basic Reset & Font --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* --- Chat Container --- */
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            max-height: 700px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        #chat-header {
+            background-color: #5a4a9c; /* A nice purple */
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        /* --- Chat Window (Messages) --- */
+        #chat-window {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto; /* This makes it scrollable */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* This respects newlines from the bot */
+        }
+
+        .bot-message {
+            background-color: #eef1f5;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user-message {
+            background-color: #5a4a9c;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* --- Typing Indicator --- */
+        .typing-indicator {
+            align-self: flex-start;
+            margin-bottom: 15px;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            background-color: #b0b8c2;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* --- Input Area --- */
+        #input-area {
+            display: flex;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #fcfcfc;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            border: 1px solid #dcdcdc;
+            border-radius: 20px;
+            padding: 10px 18px;
+            font-size: 1rem;
+            outline: none;
+        }
+        #message-input:focus {
+            border-color: #5a4a9c;
+            box-shadow: 0 0 0 3px rgba(90, 74, 156, 0.1);
+        }
+        #message-input:disabled {
+            background-color: #f0f0f0;
+        }
+
+        #send-button {
+            border: none;
+            background-color: #5a4a9c;
+            color: white;
+            font-weight: 600;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        #send-button:hover {
+            background-color: #4a3d80;
+        }
+        #send-button:disabled {
+            background-color: #a09cb8;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">🎁 Gift Finder Bot</div>
+    <div id="chat-window">
+    </div>
+    <div id="input-area">
+        <input type="text" id="message-input" placeholder="Type your answer...">
+        <button id="send-button">Send</button>
+    </div>
+</div>
+
+<script>
+    // Wait for the DOM to be fully loaded before running script
+    document.addEventListener("DOMContentLoaded", () => {
+
+        // Get references to our HTML elements
+        const chatWindow = document.getElementById("chat-window");
+        const messageInput = document.getElementById("message-input");
+        const sendButton = document.getElementById("send-button");
+
+        let isBotThinking = false;
+
+        // --- Function to add a message to the chat window ---
+        // sender is "user" or "bot"
+        function addMessage(sender, text) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", `${sender}-message`);
+            messageElement.textContent = text;
+            chatWindow.appendChild(messageElement);
+
+            // Auto-scroll to the bottom
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // --- Function to show/hide typing indicator ---
+        function setTyping(isTyping) {
+            let indicator = document.getElementById("typing-indicator");
+            if (isTyping) {
+                if (!indicator) { // Only add if it doesn't exist
+                    indicator = document.createElement("div");
+                    indicator.id = "typing-indicator";
+                    indicator.classList.add("message", "typing-indicator");
+                    indicator.innerHTML = "<span></span><span></span><span></span>";
+                    chatWindow.appendChild(indicator);
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+            } else {
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+        }
+
+        // --- Function to handle sending a message ---
+        async function handleSendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === "" || isBotThinking) {
+                return; // Don't send empty messages or while bot is replying
+            }
+
+            // 1. Display user's message
+            addMessage("user", messageText);
+            messageInput.value = ""; // Clear input
+            isBotThinking = true;
+            toggleInput(false); // Disable input while bot is thinking
+            setTyping(true); // Show typing indicator
+
+            try {
+                // 2. Send message to the backend
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ message: messageText }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                const data = await response.json(); // data is our ChatResponse DTO
+
+                setTyping(false); // Hide typing indicator
+
+                // 3. Display bot's response
+                addMessage("bot", data.response);
+
+                // 4. Check if this was the final recommendation
+                if (data.isFinal) {
+                    toggleInput(true, true); // Permanently disable
+                } else {
+                    toggleInput(true); // Re-enable input
+                }
+
+            } catch (error) {
+                console.error("Error sending message:", error);
+                setTyping(false);
+                addMessage("bot", "Oops! Something went wrong. Please refresh the page to try again.");
+                toggleInput(true, true); // Disable on error
+            }
+        }
+
+        // --- Function to enable/disable the input field ---
+        function toggleInput(enable, isPermanent = false) {
+            isBotThinking = !enable;
+            messageInput.disabled = !enable;
+            sendButton.disabled = !enable;
+
+            if (isPermanent) {
+                 messageInput.placeholder = "Chat complete. Thank you!";
+            } else if (enable) {
+                messageInput.placeholder = "Type your answer...";
+                messageInput.focus();
+            } else {
+                messageInput.placeholder = "Bot is typing...";
+            }
+        }
+
+        // --- Event Listeners ---
+        sendButton.addEventListener("click", handleSendMessage);
+        messageInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault(); // Prevents new line in input
+                handleSendMessage();
+            }
+        });
+
+        // --- Initial "start" call to get the first question ---
+        async function startChat() {
+            toggleInput(false);
+            setTyping(true);
+            try {
+                const response = await fetch("/api/start");
+                const data = await response.json();
+
+                setTyping(false);
+                addMessage("bot", data.response);
+                toggleInput(true); // Enable input for user's first reply
+
+            } catch (error) {
+                console.error("Error starting chat:", error);
+                addMessage("bot", "Error connecting to the server. Please refresh the page.");
+                toggleInput(true, true); // Permanent disable
+            }
+        }
+
+        // Start the chat when the page loads!
+        startChat();
+
+    });
+</script>
+
+</body>
+</html>
