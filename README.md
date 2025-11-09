@@ -3,7 +3,7 @@
 An intelligent chatbot that helps you find the perfect gift by asking insightful, psychological questions about the recipient.
 
 
-> **Note:** Take a screenshot of your live app and drag it into this section on GitHub to replace the text above!
+[Gift Genie](https://gift-genie.onrender.com/)
 
 ---
 
@@ -85,11 +85,4 @@ The `application.properties` file is set to use `server.port=${PORT:10000}` to a
 
 ---
 
-### 📈 Future Roadmap
 
-This prototype is live, but here's how we can make it more robust:
-
-* **Add a Database:** Replace `HttpSession` with a free-tier PostgreSQL database (like Render's) to persist chat history across sessions and server restarts.
-* **Implement Spring Security:** Secure the API endpoints to prevent abuse.
-* **Optimize for Memory:** The current setup is very memory-intensive for a free tier. The `start.sh` script includes JVM flags (`-XX:MaxRAMPercentage`, `+UseSerialGC`) to minimize the Java app's memory footprint, but further optimization is possible.
-* **Add a Custom Domain:** Configure a custom domain (`giftgenie.ai`) to make the project official.
