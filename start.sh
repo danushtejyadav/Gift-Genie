@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script starts the Ollama server in the background,
-# pulls the model, and then starts the Spring Boot app.
+# and then starts the Spring Boot app.
 
 echo "Starting Ollama server in background..."
 ollama serve &
@@ -8,10 +8,12 @@ ollama serve &
 # Wait a few seconds for the server to initialize
 sleep 5
 
-echo "Pulling llama3:8b model..."
-# This will only pull if the model isn't already present
-ollama pull llama3:8b
+# --- REMOVED THE 'ollama pull' COMMAND ---
+# This is no longer needed because the model is in the Dockerfile
 
 echo "Starting Spring Boot application..."
-# This will run in the foreground, keeping the container alive
-java -jar app.jar
+
+# These memory-saving flags are now more important than ever
+java -XX:MaxRAMPercentage=60.0 -XX:+UseSerialGC -Xss512k \
+     -Dspring.main.lazy-initialization=true \
+     -jar app.jar
