@@ -3,7 +3,7 @@
 An intelligent chatbot that helps you find the perfect gift by asking insightful, psychological questions about the recipient.
 
 
-[Gift Genie](https://gift-genie.onrender.com/)
+[Try Gift Genie](https://gift-genie.onrender.com/)
 
 ---
 
